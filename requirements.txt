@@ -111,3 +111,4 @@ websockets==14.1
 Werkzeug==3.1.6
 yarl==1.15.2
 zipp==3.21.0
+gunicorn==20.1.0
