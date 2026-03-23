@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}SpendSense | Login{% endblock %}
+
+{% block content %}
+  <section class="card border-0 shadow-sm hero-card auth-card">
+    <div class="card-body p-4 p-md-5">
+      <div class="auth-brand mb-4">
+        <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
+      </div>
+      <h1 class="display-title auth-title mb-2">Welcome back</h1>
+      <p class="text-secondary auth-subtitle mb-4">Sign in to SpendSense.</p>
+
+      <div class="auth-tabs mb-3">
+        <button type="button" class="auth-tab auth-tab-active" data-auth-tab="signin">Sign in</button>
+        <button type="button" class="auth-tab" data-auth-tab="signup">Sign up</button>
+      </div>
+
+      <form method="post" action="{{ url_for('signin') }}" class="auth-form" data-auth-panel="signin">
+        <input type="hidden" name="next_url" value="{{ next_url }}">
+        <div class="mb-3">
+          <label for="signin_email" class="form-label small text-secondary">Email</label>
+          <input id="signin_email" name="email" type="email" class="form-control modal-input auth-input" required>
+        </div>
+        <div class="mb-3">
+          <label for="signin_password" class="form-label small text-secondary">Password</label>
+          <input id="signin_password" name="password" type="password" class="form-control modal-input auth-input" required>
+        </div>
+        <button type="submit" class="btn btn-dark auth-email-btn">Sign in with email</button>
+      </form>
+
+      <form method="post" action="{{ url_for('signup') }}" class="auth-form d-none" data-auth-panel="signup">
+        <input type="hidden" name="next_url" value="{{ next_url }}">
+        <div class="mb-3">
+          <label for="signup_name" class="form-label small text-secondary">Name</label>
+          <input id="signup_name" name="name" type="text" class="form-control modal-input auth-input" required>
+        </div>
+        <div class="mb-3">
+          <label for="signup_email" class="form-label small text-secondary">Email</label>
+          <input id="signup_email" name="email" type="email" class="form-control modal-input auth-input" required>
+        </div>
+        <div class="mb-3">
+          <label for="signup_password" class="form-label small text-secondary">Password</label>
+          <input id="signup_password" name="password" type="password" class="form-control modal-input auth-input" minlength="8" required>
+        </div>
+        <button type="submit" class="btn btn-dark auth-email-btn">Create account</button>
+      </form>
+
+      <div class="auth-divider">
+        <span>or</span>
+      </div>
+
+      {% if google_login_ready %}
+        <a
+          href="{{ url_for('google_login', next=next_url) }}"
+          class="btn auth-google-btn-secondary"
+        >
+          <span class="google-mark" aria-hidden="true">
+            <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#EA4335" d="M9 7.36v3.55h4.94c-.22 1.14-.87 2.11-1.85 2.76l3 2.33c1.75-1.61 2.76-3.98 2.76-6.82 0-.65-.06-1.28-.17-1.88H9z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.2l-3-2.33c-.83.56-1.89.9-2.96.9-2.28 0-4.21-1.54-4.9-3.61H.98v2.4A9 9 0 0 0 9 18z"/>
+              <path fill="#4A90E2" d="M4.1 10.76A5.41 5.41 0 0 1 3.83 9c0-.61.1-1.2.27-1.76v-2.4H.98A9 9 0 0 0 0 9c0 1.45.35 2.82.98 4.16l3.12-2.4z"/>
+              <path fill="#FBBC05" d="M9 3.58c1.32 0 2.5.45 3.43 1.33l2.57-2.57C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.84l3.12 2.4C4.79 5.12 6.72 3.58 9 3.58z"/>
+            </svg>
+          </span>
+          Continue with Google
+        </a>
+      {% else %}
+        <button type="button" class="btn auth-google-btn-secondary" disabled>
+          <span class="google-mark" aria-hidden="true">
+            <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#EA4335" d="M9 7.36v3.55h4.94c-.22 1.14-.87 2.11-1.85 2.76l3 2.33c1.75-1.61 2.76-3.98 2.76-6.82 0-.65-.06-1.28-.17-1.88H9z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.2l-3-2.33c-.83.56-1.89.9-2.96.9-2.28 0-4.21-1.54-4.9-3.61H.98v2.4A9 9 0 0 0 9 18z"/>
+              <path fill="#4A90E2" d="M4.1 10.76A5.41 5.41 0 0 1 3.83 9c0-.61.1-1.2.27-1.76v-2.4H.98A9 9 0 0 0 0 9c0 1.45.35 2.82.98 4.16l3.12-2.4z"/>
+              <path fill="#FBBC05" d="M9 3.58c1.32 0 2.5.45 3.43 1.33l2.57-2.57C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.84l3.12 2.4C4.79 5.12 6.72 3.58 9 3.58z"/>
+            </svg>
+          </span>
+          Continue with Google
+        </button>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const authTabs = document.querySelectorAll('[data-auth-tab]');
+    const authPanels = document.querySelectorAll('[data-auth-panel]');
+
+    function showAuthPanel(tabName) {
+      authTabs.forEach((tab) => {
+        tab.classList.toggle('auth-tab-active', tab.dataset.authTab === tabName);
+      });
+      authPanels.forEach((panel) => {
+        panel.classList.toggle('d-none', panel.dataset.authPanel !== tabName);
+      });
+    }
+
+    authTabs.forEach((tab) => {
+      tab.addEventListener('click', () => showAuthPanel(tab.dataset.authTab));
+    });
+  </script>
+{% endblock %}

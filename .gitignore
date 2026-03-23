@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+instance/
+venv/
+.env
+.env.dev
+.env.prod
+spendsense_dev.db
+spendsense_prod.db
+*.db
+*.sqlite

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}SpendSense | Edit Transaction{% endblock %}
+
+{% block content %}
+  <section class="card border-0 shadow-sm hero-card">
+    <div class="card-body p-4 p-md-5">
+      <p class="eyebrow mb-2">Edit Transaction</p>
+      <h1 class="display-title mb-2">Update this entry.</h1>
+      <p class="text-secondary mb-4">Change the note, category, or date, then save and return to where you were.</p>
+
+      <form method="post" action="{{ url_for('edit_transaction', transaction_id=transaction.id) }}" class="d-grid gap-3">
+        <input type="hidden" name="next_url" value="{{ next_url }}">
+
+        <div>
+          <label for="transaction_type" class="form-label small text-secondary">Type</label>
+          <div class="type-toggle" role="group" aria-label="Transaction type">
+            {% for value, label in transaction_type_options.items() %}
+              <input
+                type="radio"
+                class="type-toggle-input"
+                name="transaction_type"
+                id="edit_transaction_type_{{ value }}"
+                value="{{ value }}"
+                {% if transaction.transaction_type == value %}checked{% endif %}
+              >
+              <label for="edit_transaction_type_{{ value }}" class="type-toggle-label">{{ label }}</label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <label for="transaction_input" class="form-label small text-secondary">Transaction note</label>
+          <input id="transaction_input" name="transaction_input" type="text" class="form-control modal-input" value="{{ transaction.note }}" required autofocus>
+        </div>
+
+        <div>
+          <label for="category" class="form-label small text-secondary">Category</label>
+          <select
+            id="category"
+            name="category"
+            class="form-select modal-input"
+            data-category-options='{{ category_options|tojson }}'
+            data-selected-category='{% if transaction.category_source == "manual" %}{{ transaction.category }}{% else %}auto{% endif %}'
+          ></select>
+        </div>
+
+        <div>
+          <label for="transaction_date" class="form-label small text-secondary">Date</label>
+          <input id="transaction_date" name="transaction_date" type="date" class="form-control modal-input" value="{{ transaction.created_at.strftime('%Y-%m-%d') }}" required>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row gap-2 pt-2">
+          <button type="submit" class="btn btn-dark modal-submit px-4">Save changes</button>
+          <a href="{{ next_url }}" class="btn btn-outline-dark rounded-pill px-4">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const editTransactionTypes = document.querySelectorAll('input[name="transaction_type"]');
+    const editCategory = document.getElementById('category');
+
+    function buildCategoryOptions(selectElement, categoryMap, transactionType, selectedValue = 'auto') {
+      const options = categoryMap[transactionType] || [];
+      selectElement.innerHTML = '';
+
+      const autoOption = document.createElement('option');
+      autoOption.value = 'auto';
+      autoOption.textContent = 'Auto detect category';
+      if (selectedValue === 'auto') autoOption.selected = true;
+      selectElement.appendChild(autoOption);
+
+      options.forEach((category) => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+        if (selectedValue === category) option.selected = true;
+        selectElement.appendChild(option);
+      });
+    }
+
+    if (editTransactionTypes.length && editCategory) {
+      const categoryMap = JSON.parse(editCategory.dataset.categoryOptions);
+      const initialSelected = editCategory.dataset.selectedCategory || 'auto';
+      const getSelectedType = () => document.querySelector('input[name="transaction_type"]:checked')?.value || 'debit';
+      buildCategoryOptions(editCategory, categoryMap, getSelectedType(), initialSelected);
+      editTransactionTypes.forEach((input) => input.addEventListener('change', () => {
+        buildCategoryOptions(editCategory, categoryMap, getSelectedType());
+      }));
+    }
+  </script>
+{% endblock %}
