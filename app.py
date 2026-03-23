@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
-from flask import Flask, flash, g, redirect, render_template, request, session, url_for
+from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import func, inspect, text
 from sqlalchemy.exc import OperationalError
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -454,6 +454,16 @@ def create_app():
             "current_user": g.get("user"),
             "is_authenticated": g.get("user") is not None,
         }
+
+    @app.route("/manifest.webmanifest")
+    def manifest():
+        return send_from_directory(app.static_folder, "manifest.webmanifest", mimetype="application/manifest+json")
+
+    @app.route("/service-worker.js")
+    def service_worker():
+        response = send_from_directory(app.static_folder, "service-worker.js", mimetype="application/javascript")
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @app.route("/login")
     def login():
