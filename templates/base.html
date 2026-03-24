@@ -106,10 +106,21 @@
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            <div class="mb-3">
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }} border-0 shadow-sm mb-2">{{ message }}</div>
-              {% endfor %}
+            <div class="modal fade" id="flashModal" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content flash-modal border-0 shadow-lg">
+                  <div class="modal-body p-4">
+                    <div class="d-flex justify-content-end mb-2">
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="d-grid gap-2">
+                      {% for category, message in messages %}
+                        <div class="flash-modal-message flash-modal-{{ category }}">{{ message }}</div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           {% endif %}
         {% endwith %}
@@ -124,6 +135,12 @@
         window.addEventListener("load", () => {
           navigator.serviceWorker.register("/service-worker.js").catch(() => {});
         });
+      }
+
+      const flashModalElement = document.getElementById("flashModal");
+      if (flashModalElement) {
+        const flashModal = new bootstrap.Modal(flashModalElement);
+        flashModal.show();
       }
     </script>
     {% block scripts %}{% endblock %}

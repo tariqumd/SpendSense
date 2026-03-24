@@ -493,7 +493,7 @@ def create_app():
             )
             db.session.commit()
             session["user_id"] = user.id
-            flash("Account created and signed in.", "success")
+            flash("Your account is ready. You're signed in.", "success")
             return redirect(next_url)
         except ValueError as exc:
             db.session.rollback()
@@ -518,7 +518,7 @@ def create_app():
             )
             db.session.commit()
             session["user_id"] = user.id
-            flash("Signed in successfully.", "success")
+            flash(f"Welcome back, {user.name}.", "success")
             return redirect(next_url)
         except ValueError as exc:
             db.session.rollback()
@@ -592,7 +592,7 @@ def create_app():
             user = upsert_google_user(user_info)
             db.session.commit()
             session["user_id"] = user.id
-            flash("Signed in successfully.", "success")
+            flash(f"Welcome back, {user.name}.", "success")
         except ValueError as exc:
             db.session.rollback()
             flash(str(exc), "danger")
@@ -648,7 +648,10 @@ def create_app():
                 transaction = Transaction(**parsed)
                 db.session.add(transaction)
                 db.session.commit()
-                flash("Entry added.", "success")
+                flash(
+                    f"{transaction.category.replace('_', ' ').title()} transaction saved for {selected_date.strftime('%d %b')}.",
+                    "success",
+                )
             except ValueError as exc:
                 flash(str(exc), "danger")
             except Exception:
@@ -742,7 +745,7 @@ def create_app():
         try:
             db.session.delete(transaction)
             db.session.commit()
-            flash("Entry deleted.", "success")
+            flash("Transaction deleted.", "success")
         except Exception:
             db.session.rollback()
             flash("Couldn't delete the entry right now.", "danger")

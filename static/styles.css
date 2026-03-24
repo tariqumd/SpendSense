@@ -164,6 +164,32 @@ body {
   border-color: rgba(15, 118, 110, 0.18);
 }
 
+.flash-modal {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  border-radius: 24px;
+}
+
+.flash-modal-message {
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.flash-modal-success {
+  background: rgba(15, 118, 110, 0.10);
+}
+
+.flash-modal-danger {
+  background: rgba(220, 38, 38, 0.10);
+}
+
+.flash-modal-warning {
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .auth-card {
   max-width: 520px;
   margin: 0 auto;
@@ -701,6 +727,60 @@ body {
   .hero-card .card-body,
   .card .card-body {
     padding: 1.25rem;
+  }
+
+  .home-hero-card .display-title {
+    font-size: clamp(1.5rem, 11vw, 2.6rem);
+    line-height: 1.02;
+    margin-bottom: 0.8rem !important;
+  }
+
+  .home-hero-card .eyebrow {
+    font-size: 0.7rem;
+    margin-bottom: 0.55rem !important;
+  }
+
+  .home-hero-card .text-secondary {
+    font-size: 0.88rem;
+  }
+
+  .home-hero-card .card-body {
+    padding: 1rem;
+  }
+
+  .home-hero-card .mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .home-date-form {
+    width: 100%;
+  }
+
+  .composer-top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .composer-toggle {
+    align-self: flex-end;
+  }
+
+  .chat-input-wrap .form-control {
+    min-height: 54px;
+    padding-left: 0.85rem;
+  }
+
+  .type-toggle-compact .type-toggle-label {
+    min-width: 58px;
+    font-size: 0.72rem;
+    padding: 0.34rem 0.62rem;
+  }
+
+  .category-select,
+  .log-button,
+  .home-date-input {
+    min-height: 46px;
   }
 
   .dashboard-summary-grid {
