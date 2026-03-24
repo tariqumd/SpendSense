@@ -432,13 +432,16 @@ def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
     app.config["APP_ENV"] = APP_ENV
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-        "DATABASE_URL", f"sqlite:///spendsense_{APP_ENV}.db"
-    )
+    if APP_ENV == "prod":
+        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    else:
+        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+            "DATABASE_URL", f"sqlite:///spendsense_{APP_ENV}.db"
+        )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
-
+    
     with app.app_context():
         ensure_schema()
         db.create_all()
