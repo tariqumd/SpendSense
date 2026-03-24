@@ -20,6 +20,13 @@ body {
   overflow-x: hidden;
 }
 
+.app-shell {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(0, env(safe-area-inset-left));
+  padding-right: max(0, env(safe-area-inset-right));
+}
+
 .app-container {
   max-width: 860px;
 }
@@ -332,6 +339,7 @@ body {
   border-radius: 20px;
   overflow: hidden;
   padding: 0.35rem;
+  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.25), 0 0 12px rgba(15, 118, 110, 0.18);
 }
 
 .composer-top-row {
@@ -720,8 +728,8 @@ body {
 
 @media (max-width: 575.98px) {
   .app-shell {
-    padding-left: 0.35rem;
-    padding-right: 0.35rem;
+    padding-left: max(0.35rem, env(safe-area-inset-left));
+    padding-right: max(0.35rem, env(safe-area-inset-right));
   }
 
   .hero-card .card-body,
