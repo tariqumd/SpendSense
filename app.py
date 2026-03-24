@@ -434,6 +434,8 @@ def create_app():
     app.config["APP_ENV"] = APP_ENV
     if APP_ENV == "prod":
         app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "connect_args": {"sslmode": "require"}}
     else:
         app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
             "DATABASE_URL", f"sqlite:///spendsense_{APP_ENV}.db"
