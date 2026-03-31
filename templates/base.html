@@ -20,13 +20,13 @@
     <div class="app-shell py-4 py-md-5">
       <main class="container app-container">
         {% if is_authenticated or request.path != url_for('login') %}
-          <nav class="d-flex align-items-center justify-content-between mb-4">
-            <a href="{% if is_authenticated %}{{ url_for('home') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand-link text-decoration-none">
-              <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
-            </a>
-            {% if is_authenticated %}
-              <div class="d-none d-md-flex align-items-center gap-2">
-                <div class="app-nav">
+          <nav class="app-header mb-4">
+            <div class="app-header-brand">
+              <a href="{% if is_authenticated %}{{ url_for('home') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand-link text-decoration-none">
+                <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
+              </a>
+              {% if is_authenticated %}
+                <div class="app-nav d-none d-md-inline-flex">
                   <a
                     href="{{ url_for('home') }}"
                     class="app-nav-link {% if request.path == url_for('home') %}app-nav-link-active{% endif %}"
@@ -39,7 +39,23 @@
                   >
                     Dashboard
                   </a>
+                  <a
+                    href="{{ url_for('snapshot_page') }}"
+                    class="app-nav-link {% if request.path == url_for('snapshot_page') %}app-nav-link-active{% endif %}"
+                  >
+                    Snapshot
+                  </a>
+                  <a
+                    href="{{ url_for('categories_page') }}"
+                    class="app-nav-link {% if request.path == url_for('categories_page') %}app-nav-link-active{% endif %}"
+                  >
+                    Categories
+                  </a>
                 </div>
+              {% endif %}
+            </div>
+            {% if is_authenticated %}
+              <div class="d-none d-md-flex align-items-center gap-2">
                 <div class="user-chip">
                   {% if current_user.profile_picture %}
                     <img src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}" class="user-avatar">
@@ -96,6 +112,8 @@
               <div class="mobile-nav-links">
                 <a href="{{ url_for('home') }}" class="mobile-nav-link {% if request.path == url_for('home') %}mobile-nav-link-active{% endif %}">Home</a>
                 <a href="{{ url_for('dashboard') }}" class="mobile-nav-link {% if request.path == url_for('dashboard') %}mobile-nav-link-active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('snapshot_page') }}" class="mobile-nav-link {% if request.path == url_for('snapshot_page') %}mobile-nav-link-active{% endif %}">Snapshot</a>
+                <a href="{{ url_for('categories_page') }}" class="mobile-nav-link {% if request.path == url_for('categories_page') %}mobile-nav-link-active{% endif %}">Categories</a>
               </div>
               <form method="post" action="{{ url_for('logout') }}" class="mt-4">
                 <button type="submit" class="btn btn-outline-dark w-100 rounded-pill py-2">Logout</button>

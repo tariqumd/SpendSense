@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}SpendSense | Snapshot{% endblock %}
+
+{% block content %}
+  <section class="card border-0 shadow-sm mb-4 hero-card">
+    <div class="card-body p-4">
+      <p class="eyebrow mb-2">Snapshot</p>
+      <h1 class="display-title mb-2">Spending picture</h1>
+      <p class="text-secondary mb-0">
+        Visual summary for {{ filters.range|title|lower }} view from {{ filters.start_date.strftime('%d %b %Y') }} to {{ filters.end_date.strftime('%d %b %Y') }}
+      </p>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+        <div>
+          <h2 class="section-title mb-1">Filters</h2>
+          <p class="text-secondary small mb-0">Use the same date presets to reshape the snapshot.</p>
+          <button
+            class="btn btn-outline-dark btn-sm rounded-pill px-3 mt-3"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#customRangePanel"
+            aria-expanded="{% if filters.range == 'custom' %}true{% else %}false{% endif %}"
+            aria-controls="customRangePanel"
+          >
+            Custom Range
+          </button>
+        </div>
+        <div class="filter-toolbar">
+          <div class="filter-pills">
+            <a href="{{ url_for('snapshot_page', range='today') }}" class="filter-pill {% if filters.range == 'today' %}filter-pill-active{% endif %}">Today</a>
+            <a href="{{ url_for('snapshot_page', range='yesterday') }}" class="filter-pill {% if filters.range == 'yesterday' %}filter-pill-active{% endif %}">Yesterday</a>
+            <a href="{{ url_for('snapshot_page', range='week') }}" class="filter-pill {% if filters.range == 'week' %}filter-pill-active{% endif %}">Week</a>
+            <a href="{{ url_for('snapshot_page', range='month') }}" class="filter-pill {% if filters.range == 'month' %}filter-pill-active{% endif %}">Month</a>
+            <!-- <a href="{{ url_for('snapshot_page', range='next_month') }}" class="filter-pill {% if filters.range == 'next_month' %}filter-pill-active{% endif %}">Next Month</a> -->
+          </div>
+        </div>
+      </div>
+
+      <div class="collapse {% if filters.range == 'custom' %}show{% endif %}" id="customRangePanel">
+        <form method="get" action="{{ url_for('snapshot_page') }}" class="row g-2 g-md-3 align-items-end mt-3 custom-range-panel">
+          <input type="hidden" name="range" value="custom">
+          <div class="col-12 col-md-4">
+            <label for="start_date" class="form-label small text-secondary">Start date</label>
+            <input id="start_date" name="start_date" type="date" class="form-control modal-input" value="{{ filters.start_date_value }}">
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="end_date" class="form-label small text-secondary">End date</label>
+            <input id="end_date" name="end_date" type="date" class="form-control modal-input" value="{{ filters.end_date_value }}">
+          </div>
+          <div class="col-12 col-md-4">
+            <button type="submit" class="btn btn-dark w-100 filter-submit">Apply Custom Range</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="snapshot-hero mb-4">
+        <div class="snapshot-headline mb-2">{{ snapshot_summary.headline }}</div>
+        <p class="text-secondary mb-0">{{ snapshot_summary.summary }}</p>
+        {% if snapshot_summary.details %}
+          <div class="snapshot-detail-list mt-3">
+            {% for detail in snapshot_summary.details %}
+              <div class="text-secondary small">{{ detail }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      {% if breakdown %}
+        <div class="snapshot-chart-wrap mb-4">
+          <div class="snapshot-donut-layout">
+            <div class="snapshot-donut-canvas">
+              <canvas id="snapshotChart" height="260"></canvas>
+            </div>
+            <div class="snapshot-donut-legend">
+              {% for item in breakdown[:6] %}
+                <div class="snapshot-legend-row">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="snapshot-legend-dot legend-color-{{ loop.index0 }}"></span>
+                    <span class="fw-semibold text-capitalize">{{ item.category }}</span>
+                  </div>
+                  <div class="small text-secondary">{{ item.chart_percent|round(1) }}% • ₹{{ '%.2f'|format(item.total) }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="snapshot-rankings mb-4">
+          {% for item in breakdown[:5] %}
+            <div class="snapshot-row">
+              <div class="d-flex justify-content-between align-items-center gap-3 mb-1">
+                <div class="fw-semibold text-capitalize">{{ item.category }}</div>
+                <div class="small text-secondary">{{ item.chart_percent|round(1) }}% of {{ chart_basis_label }} • ₹{{ '%.2f'|format(item.total) }}</div>
+              </div>
+              <div class="snapshot-bar-track">
+                <div class="snapshot-bar-fill" style="width: {{ (((item.chart_percent / chart_axis_max) * 100) if chart_axis_max else 0)|round(1) }}%;"></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-secondary mb-4">Your chart will appear once expenses are added.</p>
+      {% endif %}
+
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <div class="rule-chip-wrap h-100">
+            <div class="text-secondary small mb-1">Total spend</div>
+            <div class="fw-bold fs-5">₹{{ '%.2f'|format(total_spending) }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="rule-chip-wrap h-100">
+            <div class="text-secondary small mb-1">Transaction count</div>
+            <div class="fw-bold fs-5">{{ transaction_count }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="rule-chip-wrap h-100">
+            <div class="text-secondary small mb-1">Chart basis</div>
+            <div class="fw-bold fs-5 text-capitalize">{{ chart_basis_label }}</div>
+          </div>
+        </div>
+        {% if breakdown %}
+          <div class="col-12 col-md-4">
+            <div class="rule-chip-wrap h-100">
+              <div class="text-secondary small mb-1">Top category</div>
+              <div class="fw-bold fs-5 text-capitalize">{{ breakdown[0].category.replace('_', ' ') }}</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  {% if breakdown %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script>
+      const snapshotCtx = document.getElementById('snapshotChart');
+      if (snapshotCtx) {
+        new Chart(snapshotCtx, {
+          type: 'doughnut',
+          data: {
+            labels: {{ chart_labels|tojson }},
+            datasets: [{
+              data: {{ chart_values|tojson }},
+              backgroundColor: ['#0f766e', '#0b132b', '#f59e0b', '#2563eb', '#ef4444', '#64748b'],
+              borderWidth: 0,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '68%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const percent = {{ chart_share_values|tojson }}[context.dataIndex];
+                    return '₹' + context.raw.toFixed(2) + ' • ' + percent + '% of {{ chart_basis_label }}';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    </script>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}SpendSense | Categories{% endblock %}
+
+{% block content %}
+  <section class="card border-0 shadow-sm mb-4 hero-card">
+    <div class="card-body p-4">
+      <p class="eyebrow mb-2">Categories</p>
+      <h1 class="display-title mb-2">Category system</h1>
+      <p class="text-secondary mb-0">Create reusable rules, review active keywords, and reclassify your transaction history.</p>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="row g-4">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <h2 class="section-title mb-1">Add custom category</h2>
+            <p class="text-secondary small mb-0">Create a reusable category with comma-separated keywords.</p>
+          </div>
+          <form method="post" action="{{ url_for('add_category') }}" class="d-grid gap-3">
+            <div>
+              <label for="name" class="form-label small text-secondary">Category name</label>
+              <input id="name" name="name" type="text" class="form-control modal-input" placeholder="example: subscriptions" required>
+            </div>
+            <div>
+              <label for="keywords" class="form-label small text-secondary">Keywords</label>
+              <input id="keywords" name="keywords" type="text" class="form-control modal-input" placeholder="example: spotify, youtube premium, hotstar" required>
+            </div>
+            <button type="submit" class="btn btn-dark modal-submit">Save category</button>
+          </form>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <h2 class="section-title mb-1">Maintenance</h2>
+            <p class="text-secondary small mb-0">Keep auto-detect current or reset your custom rule set.</p>
+          </div>
+          <div class="d-grid gap-3">
+            <form method="post" action="{{ url_for('rescan_dashboard') }}">
+              <button type="submit" class="btn btn-outline-dark w-100 modal-submit">Refresh Categories</button>
+            </form>
+            <form method="post" action="{{ url_for('reset_custom_categories') }}">
+              <button type="submit" class="btn btn-outline-danger w-100 modal-submit">Reset Custom Categories</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <div class="mb-3">
+        <h2 class="section-title mb-1">Active keyword rules</h2>
+        <p class="text-secondary small mb-0">Used by auto-detect and rescan.</p>
+      </div>
+      {% if category_rules %}
+        <div class="d-grid gap-2 modal-rules-list">
+          {% for name, keywords in category_rules.items() %}
+            <div class="rule-chip-wrap">
+              <div class="fw-semibold text-capitalize mb-1">{{ name.replace('_', ' ') }}</div>
+              <div class="small text-secondary">{{ keywords|join(', ') }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-secondary mb-0">No category rules available yet.</p>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

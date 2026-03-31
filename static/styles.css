@@ -31,6 +31,20 @@ body {
   max-width: 860px;
 }
 
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
 .brand-link {
   color: var(--text);
   display: inline-flex;
@@ -546,6 +560,26 @@ body {
   border-radius: 18px;
 }
 
+.dashboard-window-card {
+  display: grid;
+  gap: 1rem;
+  align-content: space-between;
+  min-height: 220px;
+  background:
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.10), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82));
+  border-radius: 22px;
+}
+
+.snapshot-preview-copy {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .snapshot-copy {
   border-top: 1px solid var(--border);
   padding-top: 1rem;
@@ -720,6 +754,51 @@ body {
   padding-top: 0.35rem;
 }
 
+.entry-actions {
+  gap: 0.45rem;
+}
+
+.entry-action-btn {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-decoration: none;
+}
+
+.entry-action-edit {
+  background-color: rgba(21, 128, 61, 0.10) !important;
+  border-color: #15803d !important;
+  color: #15803d !important;
+}
+
+.entry-action-edit:hover,
+.entry-action-edit:focus {
+  background-color: #15803d !important;
+  border-color: #15803d !important;
+  color: #fff !important;
+}
+
+.entry-action-delete {
+  background-color: rgba(220, 38, 38, 0.10) !important;
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.entry-action-delete:hover,
+.entry-action-delete:focus {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #fff !important;
+}
+
 .modal-rules-list {
   max-height: 280px;
   overflow-y: auto;
@@ -727,6 +806,10 @@ body {
 }
 
 @media (max-width: 575.98px) {
+  .app-header {
+    align-items: center;
+  }
+
   .app-shell {
     padding-left: max(0.35rem, env(safe-area-inset-left));
     padding-right: max(0.35rem, env(safe-area-inset-right));

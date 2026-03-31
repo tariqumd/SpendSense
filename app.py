@@ -337,6 +337,16 @@ def build_dashboard_filters(args):
     elif filter_type == "week":
         start_date = today - timedelta(days=today.weekday())
         end_date = today
+    elif filter_type == "next_month":
+        if today.month == 12:
+            start_date = date(today.year + 1, 1, 1)
+            end_date = date(today.year + 1, 1, 31)
+        else:
+            start_date = date(today.year, today.month + 1, 1)
+            if today.month + 1 == 12:
+                end_date = date(today.year, 12, 31)
+            else:
+                end_date = date(today.year, today.month + 2, 1) - timedelta(days=1)
     elif filter_type == "custom" and start_date_raw and end_date_raw:
         try:
             start_date = datetime.strptime(start_date_raw, "%Y-%m-%d").date()
@@ -386,8 +396,8 @@ def build_snapshot_summary(
     share_of_spend = (top_category["total"] / total_spending * 100) if total_spending else 0
     share_of_base = (top_category["total"] / chart_base_amount * 100) if chart_base_amount else 0
     day_count = max((end_date - start_date).days + 1, 1)
-    average_expense = total_spending / transaction_count if transaction_count else 0
-    daily_average = total_spending / day_count if day_count else total_spending
+    # average_expense = total_spending / transaction_count if transaction_count else 0
+    # daily_average = total_spending / day_count if day_count else total_spending
     runner_up = breakdown[1] if len(breakdown) > 1 else None
 
     if share_of_spend >= 60:
@@ -404,8 +414,6 @@ def build_snapshot_summary(
     )
 
     details = [
-        f"Average spend per entry: ₹{average_expense:.2f}.",
-        f"Average spend per day across this range: ₹{daily_average:.2f}.",
         f"Snapshot basis: {chart_basis_label.title()} at ₹{chart_base_amount:.2f}.",
     ]
 
@@ -423,8 +431,87 @@ def build_snapshot_summary(
 
     return {
         "headline": headline,
-        "summary": summary,
         "details": details,
+        "summary": summary
+    }
+
+
+def build_dashboard_dataset(user_id, args):
+    filters = build_dashboard_filters(args)
+    filtered_transactions = Transaction.query.filter(
+        Transaction.user_id == user_id,
+        Transaction.created_at >= filters["start_datetime"],
+        Transaction.created_at <= filters["end_datetime"],
+    )
+
+    total_spending = (
+        filtered_transactions.filter_by(transaction_type="debit")
+        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+        .scalar()
+    )
+    total_credits = (
+        filtered_transactions.filter_by(transaction_type="credit")
+        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+        .scalar()
+    )
+    current_balance = float(total_credits or 0) - float(total_spending or 0)
+    transaction_count = filtered_transactions.with_entities(func.count(Transaction.id)).scalar() or 0
+    category_rows = (
+        filtered_transactions.filter_by(transaction_type="debit").with_entities(
+            Transaction.category,
+            func.sum(Transaction.amount).label("total"),
+            func.count(Transaction.id).label("count"),
+        )
+        .group_by(Transaction.category)
+        .order_by(func.sum(Transaction.amount).desc())
+        .all()
+    )
+
+    breakdown = [
+        {
+            "category": row.category,
+            "total": float(row.total),
+            "count": row.count,
+            "share": (float(row.total) / float(total_spending or 1) * 100) if total_spending else 0,
+        }
+        for row in category_rows
+    ]
+    chart_data = OrderedDict((item["category"].title(), item["total"]) for item in breakdown)
+    chart_base_amount = float(total_credits or 0) if float(total_credits or 0) > 0 else float(total_spending or 0)
+    chart_basis_label = "money in" if float(total_credits or 0) > 0 else "total spend"
+    for item in breakdown:
+        item["chart_percent"] = (item["total"] / chart_base_amount * 100) if chart_base_amount else 0
+    chart_share_data = OrderedDict(
+        (item["category"].title(), round(item["chart_percent"], 1)) for item in breakdown
+    )
+    chart_axis_max = max(
+        10,
+        math.ceil((max(chart_share_data.values(), default=0) or 0) / 10) * 10,
+    )
+    snapshot_summary = build_snapshot_summary(
+        float(total_spending or 0),
+        breakdown,
+        transaction_count,
+        filters["start_date"],
+        filters["end_date"],
+        chart_base_amount or 0,
+        chart_basis_label,
+    )
+
+    return {
+        "filters": filters,
+        "filtered_transactions": filtered_transactions,
+        "total_spending": float(total_spending or 0),
+        "total_credits": float(total_credits or 0),
+        "current_balance": current_balance,
+        "breakdown": breakdown,
+        "chart_labels": list(chart_data.keys()),
+        "chart_values": list(chart_data.values()),
+        "chart_share_values": list(chart_share_data.values()),
+        "chart_axis_max": chart_axis_max,
+        "chart_basis_label": chart_basis_label,
+        "transaction_count": transaction_count,
+        "snapshot_summary": snapshot_summary,
     }
 
 
@@ -757,6 +844,14 @@ def create_app():
 
         return redirect(build_redirect_target(next_url, "home"))
 
+    @app.route("/categories", methods=["GET"])
+    @login_required
+    def categories_page():
+        return render_template(
+            "categories.html",
+            category_rules=build_category_rules(),
+        )
+
     @app.route("/categories", methods=["POST"])
     @login_required
     def add_category():
@@ -768,11 +863,11 @@ def create_app():
 
         if not name.strip():
             flash("Category name is required.", "danger")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("categories_page"))
 
         if not keywords:
             flash("Add at least one keyword.", "danger")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("categories_page"))
 
         try:
             existing_rule = CategoryRule.query.filter(
@@ -798,7 +893,7 @@ def create_app():
             db.session.rollback()
             flash("Couldn't save the category right now.", "danger")
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("categories_page"))
 
     @app.route("/dashboard")
     @login_required
@@ -808,67 +903,9 @@ def create_app():
         dashboard_view = (request.args.get("view") or "category").strip().lower()
         if dashboard_view not in {"category", "all"}:
             dashboard_view = "category"
-        filters = build_dashboard_filters(request.args)
-        filtered_transactions = Transaction.query.filter(
-            Transaction.user_id == g.user.id,
-            Transaction.created_at >= filters["start_datetime"],
-            Transaction.created_at <= filters["end_datetime"],
-        )
-
-        total_spending = (
-            filtered_transactions.filter_by(transaction_type="debit")
-            .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
-            .scalar()
-        )
-        total_credits = (
-            filtered_transactions.filter_by(transaction_type="credit")
-            .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
-            .scalar()
-        )
-        current_balance = float(total_credits or 0) - float(total_spending or 0)
-        transaction_count = filtered_transactions.with_entities(func.count(Transaction.id)).scalar() or 0
-        category_rows = (
-            filtered_transactions.filter_by(transaction_type="debit").with_entities(
-                Transaction.category,
-                func.sum(Transaction.amount).label("total"),
-                func.count(Transaction.id).label("count"),
-            )
-            .group_by(Transaction.category)
-            .order_by(func.sum(Transaction.amount).desc())
-            .all()
-        )
-
-        breakdown = [
-            {
-                "category": row.category,
-                "total": float(row.total),
-                "count": row.count,
-                "share": (float(row.total) / float(total_spending or 1) * 100) if total_spending else 0,
-            }
-            for row in category_rows
-        ]
-        chart_data = OrderedDict((item["category"].title(), item["total"]) for item in breakdown)
-        chart_base_amount = float(total_credits or 0) if float(total_credits or 0) > 0 else float(total_spending or 0)
-        chart_basis_label = "money in" if float(total_credits or 0) > 0 else "total spend"
-        for item in breakdown:
-            item["chart_percent"] = (item["total"] / chart_base_amount * 100) if chart_base_amount else 0
-        chart_share_data = OrderedDict(
-            (item["category"].title(), round(item["chart_percent"], 1)) for item in breakdown
-        )
-        chart_axis_max = max(
-            10,
-            math.ceil((max(chart_share_data.values(), default=0) or 0) / 10) * 10,
-        )
-        active_rules = build_category_rules()
-        snapshot_summary = build_snapshot_summary(
-            float(total_spending or 0),
-            breakdown,
-            transaction_count,
-            filters["start_date"],
-            filters["end_date"],
-            chart_base_amount or 0,
-            chart_basis_label,
-        )
+        dashboard_data = build_dashboard_dataset(g.user.id, request.args)
+        filters = dashboard_data["filters"]
+        filtered_transactions = dashboard_data["filtered_transactions"]
 
         if selected_category:
             category_transactions = (
@@ -886,24 +923,16 @@ def create_app():
 
         return render_template(
             "dashboard.html",
-            total_spending=float(total_spending or 0),
-            total_credits=float(total_credits or 0),
-            current_balance=current_balance,
-            breakdown=breakdown,
-            chart_labels=list(chart_data.keys()),
-            chart_values=list(chart_data.values()),
-            chart_share_values=list(chart_share_data.values()),
-            chart_axis_max=chart_axis_max,
-            chart_basis_label=chart_basis_label,
-            category_rules=active_rules,
-            category_options=list(active_rules.keys()),
+            total_spending=dashboard_data["total_spending"],
+            total_credits=dashboard_data["total_credits"],
+            current_balance=dashboard_data["current_balance"],
+            breakdown=dashboard_data["breakdown"],
             selected_category=selected_category,
             category_transactions=category_transactions,
             dashboard_view=dashboard_view,
             all_logs=all_logs,
             filters=filters,
-            transaction_count=transaction_count,
-            snapshot_summary=snapshot_summary,
+            transaction_count=dashboard_data["transaction_count"],
             dashboard_return_url=url_for(
                 "dashboard",
                 range=filters["range"],
@@ -914,7 +943,16 @@ def create_app():
             ),
         )
 
-    @app.route("/dashboard/rescan", methods=["POST"])
+    @app.route("/snapshot")
+    @login_required
+    def snapshot_page():
+        snapshot_data = build_dashboard_dataset(g.user.id, request.args)
+        return render_template(
+            "snapshot.html",
+            **snapshot_data,
+        )
+
+    @app.route("/categories/rescan", methods=["POST"])
     @login_required
     def rescan_dashboard():
         try:
@@ -925,9 +963,9 @@ def create_app():
             db.session.rollback()
             flash("Couldn't complete the rescan right now.", "danger")
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("categories_page"))
 
-    @app.route("/dashboard/reset-categories", methods=["POST"])
+    @app.route("/categories/reset", methods=["POST"])
     @login_required
     def reset_custom_categories():
         try:
@@ -943,7 +981,7 @@ def create_app():
             db.session.rollback()
             flash("Couldn't reset custom categories right now.", "danger")
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("categories_page"))
 
     return app
 
