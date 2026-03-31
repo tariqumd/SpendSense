@@ -927,12 +927,18 @@ def create_app():
             total_credits=dashboard_data["total_credits"],
             current_balance=dashboard_data["current_balance"],
             breakdown=dashboard_data["breakdown"],
+            chart_labels=dashboard_data["chart_labels"],
+            chart_values=dashboard_data["chart_values"],
+            chart_share_values=dashboard_data["chart_share_values"],
+            chart_axis_max=dashboard_data["chart_axis_max"],
+            chart_basis_label=dashboard_data["chart_basis_label"],
             selected_category=selected_category,
             category_transactions=category_transactions,
             dashboard_view=dashboard_view,
             all_logs=all_logs,
             filters=filters,
             transaction_count=dashboard_data["transaction_count"],
+            snapshot_summary=dashboard_data["snapshot_summary"],
             dashboard_return_url=url_for(
                 "dashboard",
                 range=filters["range"],
@@ -941,15 +947,6 @@ def create_app():
                 view=dashboard_view,
                 category=selected_category or None,
             ),
-        )
-
-    @app.route("/snapshot")
-    @login_required
-    def snapshot_page():
-        snapshot_data = build_dashboard_dataset(g.user.id, request.args)
-        return render_template(
-            "snapshot.html",
-            **snapshot_data,
         )
 
     @app.route("/categories/rescan", methods=["POST"])
