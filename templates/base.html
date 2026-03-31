@@ -20,13 +20,13 @@
     <div class="app-shell py-4 py-md-5">
       <main class="container app-container">
         {% if is_authenticated or request.path != url_for('login') %}
-          <nav class="app-header mb-4">
-            <div class="app-header-brand">
-              <a href="{% if is_authenticated %}{{ url_for('home') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand-link text-decoration-none">
-                <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
-              </a>
-              {% if is_authenticated %}
-                <div class="app-nav d-none d-md-inline-flex">
+          <nav class="d-flex align-items-center justify-content-between mb-4">
+            <a href="{% if is_authenticated %}{{ url_for('home') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand-link text-decoration-none">
+              <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
+            </a>
+            {% if is_authenticated %}
+              <div class="d-none d-md-flex align-items-center gap-2">
+                <div class="app-nav">
                   <a
                     href="{{ url_for('home') }}"
                     class="app-nav-link {% if request.path == url_for('home') %}app-nav-link-active{% endif %}"
@@ -52,10 +52,6 @@
                     Categories
                   </a>
                 </div>
-              {% endif %}
-            </div>
-            {% if is_authenticated %}
-              <div class="d-none d-md-flex align-items-center gap-2">
                 <div class="user-chip">
                   {% if current_user.profile_picture %}
                     <img src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}" class="user-avatar">
