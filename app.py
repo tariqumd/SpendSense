@@ -778,6 +778,24 @@ def create_app():
             .limit(10)
             .all()
         )
+        home_balance_credits = (
+            Transaction.query.filter(
+                Transaction.user_id == g.user.id,
+                Transaction.transaction_type == "credit",
+                Transaction.created_at <= get_day_bounds(selected_date)[1],
+            )
+            .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+            .scalar()
+        )
+        home_balance_spending = (
+            Transaction.query.filter(
+                Transaction.user_id == g.user.id,
+                Transaction.transaction_type == "debit",
+                Transaction.created_at <= get_day_bounds(selected_date)[1],
+            )
+            .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+            .scalar()
+        )
         return render_template(
             "home.html",
             transactions=recent_transactions,
@@ -786,6 +804,7 @@ def create_app():
             selected_date_value=selected_date.strftime("%Y-%m-%d"),
             today_label=selected_date.strftime("%a, %d %b %Y"),
             is_today=selected_date == date.today(),
+            current_balance=float(home_balance_credits or 0) - float(home_balance_spending or 0),
             home_return_url=url_for("home", selected_date=selected_date.strftime("%Y-%m-%d")),
             transaction_type_options={"debit": "Expense", "credit": "Credit"},
         )
@@ -1082,7 +1101,7 @@ def create_app():
         raw_selected_category = (request.args.get("category", "") or "").strip()
         selected_category = normalize_rule_name(raw_selected_category) if raw_selected_category else ""
         dashboard_view = (request.args.get("view") or "category").strip().lower()
-        if dashboard_view not in {"category", "all"}:
+        if dashboard_view not in {"category", "all", "credits"}:
             dashboard_view = "category"
         dashboard_data = build_dashboard_dataset(g.user.id, request.args)
         filters = dashboard_data["filters"]
@@ -1101,6 +1120,28 @@ def create_app():
         all_logs = (
             filtered_transactions.order_by(Transaction.created_at.desc(), Transaction.id.desc()).limit(50).all()
         )
+        credit_rows = (
+            filtered_transactions.filter_by(transaction_type="credit")
+            .with_entities(
+                Transaction.category,
+                func.sum(Transaction.amount).label("total"),
+                func.count(Transaction.id).label("count"),
+            )
+            .group_by(Transaction.category)
+            .order_by(func.sum(Transaction.amount).desc())
+            .all()
+        )
+        credit_breakdown = [
+            {
+                "category": row.category,
+                "total": float(row.total),
+                "count": row.count,
+                "share": (float(row.total) / float(dashboard_data["total_credits"] or 1) * 100)
+                if dashboard_data["total_credits"]
+                else 0,
+            }
+            for row in credit_rows
+        ]
 
         return render_template(
             "dashboard.html",
@@ -1116,6 +1157,7 @@ def create_app():
             chart_basis_label=dashboard_data["chart_basis_label"],
             selected_category=selected_category,
             category_transactions=category_transactions,
+            credit_breakdown=credit_breakdown,
             dashboard_view=dashboard_view,
             all_logs=all_logs,
             filters=filters,

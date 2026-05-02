@@ -166,10 +166,18 @@
                 >
                   All logs
                 </a>
+                <a
+                  href="{{ url_for('dashboard', range=filters.range, start_date=filters.start_date_value, end_date=filters.end_date_value, view='credits') }}"
+                  class="panel-toggle-pill {% if dashboard_view == 'credits' %}panel-toggle-pill-active{% endif %}"
+                >
+                  Money in
+                </a>
               </div>
               <h2 class="section-title mb-1">
                 {% if dashboard_view == 'all' %}
                   All logs
+                {% elif dashboard_view == 'credits' %}
+                  Money in breakdown
                 {% else %}
                   Category breakdown
                 {% endif %}
@@ -177,6 +185,8 @@
               <p class="text-secondary small mb-0">
                 {% if dashboard_view == 'all' %}
                   Every entry in the active date range, newest first
+                {% elif dashboard_view == 'credits' %}
+                  A grouped view of credits in the selected date range
                 {% else %}
                   A simple view of where the money went
                 {% endif %}
@@ -227,6 +237,22 @@
               </div>
             {% else %}
               <p class="text-secondary mb-0">No logs found for this date range.</p>
+            {% endif %}
+          {% elif dashboard_view == 'credits' %}
+            {% if credit_breakdown %}
+              <div class="list-group list-group-flush">
+                {% for item in credit_breakdown %}
+                  <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center breakdown-link">
+                    <div>
+                      <div class="fw-semibold text-capitalize">{{ item.category.replace('_', ' ') }}</div>
+                      <div class="text-secondary small">{{ item.count }} entr{{ 'y' if item.count == 1 else 'ies' }} • {{ item.share|round(1) }}% of money in</div>
+                    </div>
+                    <div class="fw-bold credit-amount">+₹{{ '%.2f'|format(item.total) }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-secondary mb-0">No credits found for this date range.</p>
             {% endif %}
           {% else %}
             {% if breakdown %}

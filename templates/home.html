@@ -5,9 +5,17 @@
 {% block content %}
   <section class="hero-card card border-0 shadow-sm mb-4 home-hero-card">
     <div class="card-body p-4">
-      <p class="eyebrow mb-2">AI-powered expense tracker</p>
-      <h1 class="display-title mb-2">Just type the expense.</h1>
-      <p class="text-secondary mb-1">Examples: "Spent 250 on fuel", "499 swiggy", "1200 amazon shopping"</p>
+      <div class="home-hero-top mb-4">
+        <div>
+          <p class="eyebrow mb-2">AI-powered expense tracker</p>
+          <h1 class="display-title mb-2">Just type the expense.</h1>
+          <p class="text-secondary mb-1">Examples: "Spent 250 on fuel", "499 swiggy", "1200 amazon shopping"</p>
+        </div>
+        <div class="home-balance-card">
+          <div class="home-balance-label">Current balance as of {{ today_label }}</div>
+          <div class="home-balance-value {% if current_balance >= 0 %}credit-amount{% endif %}">₹{{ '%.2f'|format(current_balance) }}</div>
+        </div>
+      </div>
       <div class="d-flex flex-column flex-sm-row align-items-sm-end justify-content-between gap-3 mb-4">
         <p class="today-label mb-0">
           {% if is_today %}Today{% else %}Selected day{% endif %} • {{ today_label }}
