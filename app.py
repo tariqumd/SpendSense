@@ -14,7 +14,7 @@ from sqlalchemy import func, inspect, text
 from sqlalchemy.exc import OperationalError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from models import CategoryRule, Transaction, User, db
+from models import CategoryRule, PersonLedgerEntry, Transaction, User, db
 from parser import (
     CREDIT_CATEGORY_KEYWORDS,
     DEFAULT_CATEGORY_KEYWORDS,
@@ -443,6 +443,10 @@ def build_dashboard_dataset(user_id, args):
         Transaction.created_at >= filters["start_datetime"],
         Transaction.created_at <= filters["end_datetime"],
     )
+    cumulative_transactions = Transaction.query.filter(
+        Transaction.user_id == user_id,
+        Transaction.created_at <= filters["end_datetime"],
+    )
 
     total_spending = (
         filtered_transactions.filter_by(transaction_type="debit")
@@ -454,7 +458,18 @@ def build_dashboard_dataset(user_id, args):
         .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
         .scalar()
     )
-    current_balance = float(total_credits or 0) - float(total_spending or 0)
+    net_period_balance = float(total_credits or 0) - float(total_spending or 0)
+    cumulative_spending = (
+        cumulative_transactions.filter_by(transaction_type="debit")
+        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+        .scalar()
+    )
+    cumulative_credits = (
+        cumulative_transactions.filter_by(transaction_type="credit")
+        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+        .scalar()
+    )
+    current_balance = float(cumulative_credits or 0) - float(cumulative_spending or 0)
     transaction_count = filtered_transactions.with_entities(func.count(Transaction.id)).scalar() or 0
     category_rows = (
         filtered_transactions.filter_by(transaction_type="debit").with_entities(
@@ -504,6 +519,7 @@ def build_dashboard_dataset(user_id, args):
         "total_spending": float(total_spending or 0),
         "total_credits": float(total_credits or 0),
         "current_balance": current_balance,
+        "net_period_balance": net_period_balance,
         "breakdown": breakdown,
         "chart_labels": list(chart_data.keys()),
         "chart_values": list(chart_data.values()),
@@ -774,6 +790,171 @@ def create_app():
             transaction_type_options={"debit": "Expense", "credit": "Credit"},
         )
 
+    @app.route("/borrowings", methods=["GET", "POST"])
+    @login_required
+    def borrowings():
+        if request.method == "POST":
+            person_name = (request.form.get("person_name") or "").strip()
+            note = (request.form.get("note") or "").strip()
+            entry_type = (request.form.get("entry_type") or "lent").strip().lower()
+            amount_raw = (request.form.get("amount") or "").strip()
+
+            if entry_type not in {"lent", "borrowed"}:
+                entry_type = "lent"
+
+            if not person_name:
+                flash("Person name is required.", "danger")
+                return redirect(url_for("borrowings"))
+
+            if not note:
+                flash("Add a short note so the entry is easy to recognize.", "danger")
+                return redirect(url_for("borrowings"))
+
+            try:
+                amount = float(amount_raw)
+            except ValueError:
+                flash("Amount must be a valid number.", "danger")
+                return redirect(url_for("borrowings"))
+
+            if amount <= 0:
+                flash("Amount must be greater than zero.", "danger")
+                return redirect(url_for("borrowings"))
+
+            try:
+                db.session.add(
+                    PersonLedgerEntry(
+                        user_id=g.user.id,
+                        person_name=person_name,
+                        entry_type=entry_type,
+                        amount=round(amount, 2),
+                        note=note,
+                    )
+                )
+                db.session.commit()
+                flash(
+                    f"{'Lending' if entry_type == 'lent' else 'Borrowing'} entry saved for {person_name}.",
+                    "success",
+                )
+            except Exception:
+                db.session.rollback()
+                flash("Couldn't save the borrowing entry right now.", "danger")
+
+            return redirect(url_for("borrowings"))
+
+        selected_person_raw = (request.args.get("person") or "").strip()
+        selected_person_key = selected_person_raw.lower()
+
+        entries = (
+            PersonLedgerEntry.query.filter(PersonLedgerEntry.user_id == g.user.id)
+            .order_by(PersonLedgerEntry.is_settled.asc(), PersonLedgerEntry.created_at.desc(), PersonLedgerEntry.id.desc())
+            .all()
+        )
+
+        open_lent_total = sum(entry.amount for entry in entries if entry.entry_type == "lent" and not entry.is_settled)
+        open_borrowed_total = sum(
+            entry.amount for entry in entries if entry.entry_type == "borrowed" and not entry.is_settled
+        )
+
+        person_summary_map = OrderedDict()
+        for entry in entries:
+            if entry.is_settled:
+                continue
+            normalized_name = entry.person_name.strip().lower()
+            person_summary = person_summary_map.setdefault(
+                normalized_name,
+                {
+                    "person_name": entry.person_name,
+                    "lent_total": 0.0,
+                    "borrowed_total": 0.0,
+                },
+            )
+            if entry.entry_type == "lent":
+                person_summary["lent_total"] += entry.amount
+            else:
+                person_summary["borrowed_total"] += entry.amount
+
+        person_summaries = []
+        for summary in person_summary_map.values():
+            net_balance = summary["lent_total"] - summary["borrowed_total"]
+            if net_balance > 0:
+                balance_copy = f"They owe you ₹{net_balance:.2f}"
+            elif net_balance < 0:
+                balance_copy = f"You owe ₹{abs(net_balance):.2f}"
+            else:
+                balance_copy = "Even balance"
+            person_summaries.append(
+                {
+                    **summary,
+                    "net_balance": net_balance,
+                    "balance_copy": balance_copy,
+                }
+            )
+
+        person_summaries.sort(key=lambda item: abs(item["net_balance"]), reverse=True)
+
+        selected_person_entries = []
+        selected_person_summary = None
+        if selected_person_key:
+            selected_person_entries = [
+                entry
+                for entry in entries
+                if entry.person_name.strip().lower() == selected_person_key
+            ]
+            if selected_person_entries:
+                lent_total = sum(entry.amount for entry in selected_person_entries if entry.entry_type == "lent")
+                borrowed_total = sum(entry.amount for entry in selected_person_entries if entry.entry_type == "borrowed")
+                net_balance = lent_total - borrowed_total
+                selected_person_summary = {
+                    "person_name": selected_person_entries[0].person_name,
+                    "lent_total": lent_total,
+                    "borrowed_total": borrowed_total,
+                    "net_balance": net_balance,
+                }
+
+        return render_template(
+            "borrowings.html",
+            entries=entries[:50],
+            person_summaries=person_summaries,
+            open_lent_total=open_lent_total,
+            open_borrowed_total=open_borrowed_total,
+            net_balance=open_lent_total - open_borrowed_total,
+            selected_person=selected_person_summary,
+            selected_person_entries=selected_person_entries,
+        )
+
+    @app.route("/borrowings/<int:entry_id>/settle", methods=["POST"])
+    @login_required
+    def settle_borrowing(entry_id):
+        entry = PersonLedgerEntry.query.filter_by(id=entry_id, user_id=g.user.id).first_or_404()
+
+        try:
+            entry.is_settled = not entry.is_settled
+            db.session.commit()
+            flash(
+                "Entry marked as settled." if entry.is_settled else "Entry marked as open again.",
+                "success",
+            )
+        except Exception:
+            db.session.rollback()
+            flash("Couldn't update the borrowing status right now.", "danger")
+
+        return redirect(url_for("borrowings"))
+
+    @app.route("/borrowings/<int:entry_id>/delete", methods=["POST"])
+    @login_required
+    def delete_borrowing(entry_id):
+        entry = PersonLedgerEntry.query.filter_by(id=entry_id, user_id=g.user.id).first_or_404()
+
+        try:
+            db.session.delete(entry)
+            db.session.commit()
+            flash("Borrowing entry deleted.", "success")
+        except Exception:
+            db.session.rollback()
+            flash("Couldn't delete the borrowing entry right now.", "danger")
+
+        return redirect(url_for("borrowings"))
+
     @app.route("/transactions/<int:transaction_id>/edit", methods=["GET", "POST"])
     @login_required
     def edit_transaction(transaction_id):
@@ -926,6 +1107,7 @@ def create_app():
             total_spending=dashboard_data["total_spending"],
             total_credits=dashboard_data["total_credits"],
             current_balance=dashboard_data["current_balance"],
+            net_period_balance=dashboard_data["net_period_balance"],
             breakdown=dashboard_data["breakdown"],
             chart_labels=dashboard_data["chart_labels"],
             chart_values=dashboard_data["chart_values"],

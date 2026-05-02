@@ -14,18 +14,49 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="SpendSense">
-    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles.css', v='20260502a') }}" rel="stylesheet">
   </head>
   <body>
     <div class="app-shell py-4 py-md-5">
       <main class="container app-container">
         {% if is_authenticated or request.path != url_for('login') %}
-          <nav class="d-flex align-items-center justify-content-between mb-4">
-            <a href="{% if is_authenticated %}{{ url_for('home') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand-link text-decoration-none">
-              <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
-            </a>
+          <nav class="app-header mb-4">
+            <div class="app-header-top">
+              <a href="{% if is_authenticated %}{{ url_for('home') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand-link text-decoration-none">
+                <span class="brand-logo"><span class="brand-logo-light">Spend</span><span class="brand-logo-strong">Sense</span></span>
+              </a>
+              {% if is_authenticated %}
+                <div class="d-none d-md-flex align-items-center gap-2">
+                  <div class="user-chip">
+                    {% if current_user.profile_picture %}
+                      <img src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}" class="user-avatar">
+                    {% else %}
+                      <span class="user-avatar user-avatar-fallback">{{ current_user.name[:1] }}</span>
+                    {% endif %}
+                    <div class="user-chip-copy">
+                      <div class="user-chip-name">{{ current_user.name }}</div>
+                      <div class="user-chip-email">{{ current_user.email }}</div>
+                    </div>
+                  </div>
+                  <form method="post" action="{{ url_for('logout') }}" class="mb-0">
+                    <button type="submit" class="btn btn-outline-dark btn-sm rounded-pill px-3">Logout</button>
+                  </form>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-outline-dark btn-sm rounded-pill px-3 d-md-none"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#mobileNav"
+                  aria-controls="mobileNav"
+                >
+                  Menu
+                </button>
+              {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Login</a>
+              {% endif %}
+            </div>
             {% if is_authenticated %}
-              <div class="d-none d-md-flex align-items-center gap-2">
+              <div class="app-header-nav d-none d-md-block">
                 <div class="app-nav">
                   <a
                     href="{{ url_for('home') }}"
@@ -45,33 +76,14 @@
                   >
                     Categories
                   </a>
+                  <a
+                    href="{{ url_for('borrowings') }}"
+                    class="app-nav-link {% if request.path == url_for('borrowings') %}app-nav-link-active{% endif %}"
+                  >
+                    Borrowings
+                  </a>
                 </div>
-                <div class="user-chip">
-                  {% if current_user.profile_picture %}
-                    <img src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}" class="user-avatar">
-                  {% else %}
-                    <span class="user-avatar user-avatar-fallback">{{ current_user.name[:1] }}</span>
-                  {% endif %}
-                  <div class="user-chip-copy">
-                    <div class="user-chip-name">{{ current_user.name }}</div>
-                    <div class="user-chip-email">{{ current_user.email }}</div>
-                  </div>
-                </div>
-                <form method="post" action="{{ url_for('logout') }}" class="mb-0">
-                  <button type="submit" class="btn btn-outline-dark btn-sm rounded-pill px-3">Logout</button>
-                </form>
               </div>
-              <button
-                type="button"
-                class="btn btn-outline-dark btn-sm rounded-pill px-3 d-md-none"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#mobileNav"
-                aria-controls="mobileNav"
-              >
-                Menu
-              </button>
-            {% else %}
-              <a href="{{ url_for('login') }}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Login</a>
             {% endif %}
           </nav>
         {% endif %}
@@ -103,6 +115,7 @@
                 <a href="{{ url_for('home') }}" class="mobile-nav-link {% if request.path == url_for('home') %}mobile-nav-link-active{% endif %}">Home</a>
                 <a href="{{ url_for('dashboard') }}" class="mobile-nav-link {% if request.path == url_for('dashboard') %}mobile-nav-link-active{% endif %}">Dashboard</a>
                 <a href="{{ url_for('categories_page') }}" class="mobile-nav-link {% if request.path == url_for('categories_page') %}mobile-nav-link-active{% endif %}">Categories</a>
+                <a href="{{ url_for('borrowings') }}" class="mobile-nav-link {% if request.path == url_for('borrowings') %}mobile-nav-link-active{% endif %}">Borrowings</a>
               </div>
               <form method="post" action="{{ url_for('logout') }}" class="mt-4">
                 <button type="submit" class="btn btn-outline-dark w-100 rounded-pill py-2">Logout</button>

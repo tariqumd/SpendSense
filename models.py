@@ -34,3 +34,16 @@ class Transaction(db.Model):
     category_source = db.Column(db.String(20), nullable=False, default="auto")
     note = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+class PersonLedgerEntry(db.Model):
+    __tablename__ = "person_ledger_entries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
+    person_name = db.Column(db.String(255), nullable=False, index=True)
+    entry_type = db.Column(db.String(20), nullable=False, default="lent")
+    amount = db.Column(db.Float, nullable=False)
+    note = db.Column(db.Text, nullable=False)
+    is_settled = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

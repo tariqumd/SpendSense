@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}SpendSense | Borrowings{% endblock %}
+
+{% block content %}
+  <section class="hero-card card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <p class="eyebrow mb-2">Borrowings</p>
+      <h1 class="display-title mb-2">Track money between people.</h1>
+      <p class="text-secondary mb-0">Log what you lent, what you borrowed, and quickly see who owes whom.</p>
+    </div>
+  </section>
+
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4 dashboard-summary-card">
+          <div class="text-secondary small mb-1">Open lent</div>
+          <div class="fw-bold fs-4 credit-amount">₹{{ '%.2f'|format(open_lent_total) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4 dashboard-summary-card">
+          <div class="text-secondary small mb-1">Open borrowed</div>
+          <div class="fw-bold fs-4">₹{{ '%.2f'|format(open_borrowed_total) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4 dashboard-summary-card">
+          <div class="text-secondary small mb-1">Net balance</div>
+          <div class="fw-bold fs-4 {% if net_balance >= 0 %}credit-amount{% endif %}">
+            {% if net_balance > 0 %}+{% endif %}₹{{ '%.2f'|format(net_balance) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="mb-3">
+        <h2 class="section-title mb-1">Add entry</h2>
+        <p class="text-secondary small mb-0">Create a borrowing or lending record for a specific person.</p>
+      </div>
+      <form method="post" action="{{ url_for('borrowings') }}" class="row g-3">
+        <div class="col-12 col-md-6">
+          <label for="person_name" class="form-label small text-secondary">Person</label>
+          <input id="person_name" name="person_name" type="text" class="form-control modal-input" placeholder="example: Nafi" required>
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="amount" class="form-label small text-secondary">Amount</label>
+          <input id="amount" name="amount" type="number" min="0.01" step="0.01" class="form-control modal-input" placeholder="0.00" required>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small text-secondary d-block">Type</label>
+          <div class="type-toggle type-toggle-compact borrowing-toggle" role="group" aria-label="Borrowing type">
+            <input type="radio" class="type-toggle-input" name="entry_type" id="entry_type_lent" value="lent" checked>
+            <label for="entry_type_lent" class="type-toggle-label type-toggle-label-credit">I lent</label>
+            <input type="radio" class="type-toggle-input" name="entry_type" id="entry_type_borrowed" value="borrowed">
+            <label for="entry_type_borrowed" class="type-toggle-label type-toggle-label-debit">I borrowed</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <label for="note" class="form-label small text-secondary">Note</label>
+          <input id="note" name="note" type="text" class="form-control modal-input" placeholder="example: dinner split, cab fare, rent advance" required>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-dark px-4 modal-submit">Save borrowing entry</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="mb-3">
+        <h2 class="section-title mb-1">People summary</h2>
+        <p class="text-secondary small mb-0">Open balances grouped by person.</p>
+      </div>
+      {% if person_summaries %}
+        <div class="d-grid gap-2">
+          {% for person in person_summaries %}
+            <a
+              href="{{ url_for('borrowings', person=person.person_name) }}"
+              class="rule-chip-wrap borrowing-summary-card borrowing-summary-link text-decoration-none"
+            >
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <div class="fw-semibold">{{ person.person_name }}</div>
+                  <div class="small text-secondary">Lent ₹{{ '%.2f'|format(person.lent_total) }} • Borrowed ₹{{ '%.2f'|format(person.borrowed_total) }}</div>
+                </div>
+                <div class="fw-bold {% if person.net_balance >= 0 %}credit-amount{% endif %}">{{ person.balance_copy }}</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-secondary mb-0">No open balances yet.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <div class="mb-3">
+        <h2 class="section-title mb-1">Recent entries</h2>
+        <p class="text-secondary small mb-0">Latest borrowing and lending activity.</p>
+      </div>
+      {% if entries %}
+        <div class="d-grid gap-3">
+          {% for entry in entries %}
+            <article class="card border-0 shadow-sm expense-card">
+              <div class="card-body d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <div class="expense-note">{{ entry.person_name }}</div>
+                  <div class="expense-meta text-secondary small text-uppercase">
+                    {{ entry.entry_type }} • {{ 'settled' if entry.is_settled else 'open' }} • {{ entry.created_at.strftime('%d %b, %I:%M %p') }}
+                  </div>
+                  <div class="text-secondary small mt-1">{{ entry.note }}</div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-2">
+                  <div class="expense-amount {% if entry.entry_type == 'lent' %}credit-amount{% endif %}">
+                    {% if entry.entry_type == 'lent' %}+{% else %}-{% endif %}₹{{ '%.2f'|format(entry.amount) }}
+                  </div>
+                  <div class="d-flex align-items-center entry-actions">
+                    <form method="post" action="{{ url_for('settle_borrowing', entry_id=entry.id) }}">
+                      <button
+                        type="submit"
+                        class="btn btn-sm entry-action-btn {% if entry.is_settled %}entry-action-edit{% else %}entry-action-settle{% endif %}"
+                      >
+                        {% if entry.is_settled %}Reopen{% else %}Settle{% endif %}
+                      </button>
+                    </form>
+                    <form method="post" action="{{ url_for('delete_borrowing', entry_id=entry.id) }}">
+                      <button
+                        type="submit"
+                        class="btn btn-sm entry-action-btn entry-action-delete"
+                        onclick="return confirm('Delete this borrowing entry?');"
+                      >
+                        Delete
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-secondary mb-0">No borrowing or lending entries yet. Add your first one above.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if selected_person %}
+    <div class="modal fade" id="personBreakupModal" tabindex="-1" aria-labelledby="personBreakupModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content category-modal border-0 shadow-lg">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <h2 class="section-title mb-1" id="personBreakupModalLabel">{{ selected_person.person_name }}</h2>
+              <p class="text-secondary small mb-0">Detailed breakup of lending and borrowing entries for this person.</p>
+            </div>
+            <a href="{{ url_for('borrowings') }}" class="btn-close" aria-label="Close"></a>
+          </div>
+          <div class="modal-body pt-3">
+            <div class="row g-3 mb-4">
+              <div class="col-12 col-md-4">
+                <div class="rule-chip-wrap h-100">
+                  <div class="text-secondary small mb-1">Total lent</div>
+                  <div class="fw-bold fs-5 credit-amount">₹{{ '%.2f'|format(selected_person.lent_total) }}</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="rule-chip-wrap h-100">
+                  <div class="text-secondary small mb-1">Total borrowed</div>
+                  <div class="fw-bold fs-5">₹{{ '%.2f'|format(selected_person.borrowed_total) }}</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="rule-chip-wrap h-100">
+                  <div class="text-secondary small mb-1">Net balance</div>
+                  <div class="fw-bold fs-5 {% if selected_person.net_balance >= 0 %}credit-amount{% endif %}">
+                    {% if selected_person.net_balance > 0 %}+{% endif %}₹{{ '%.2f'|format(selected_person.net_balance) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% if selected_person_entries %}
+              <div class="d-grid gap-3">
+                {% for entry in selected_person_entries %}
+                  <article class="card border-0 shadow-sm expense-card">
+                    <div class="card-body d-flex justify-content-between align-items-start gap-3">
+                      <div>
+                        <div class="expense-note">{{ entry.note }}</div>
+                        <div class="expense-meta text-secondary small text-uppercase">
+                          {{ entry.entry_type }} • {{ 'settled' if entry.is_settled else 'open' }} • {{ entry.created_at.strftime('%d %b, %I:%M %p') }}
+                        </div>
+                      </div>
+                      <div class="d-flex flex-column align-items-end gap-2">
+                        <div class="expense-amount {% if entry.entry_type == 'lent' %}credit-amount{% endif %}">
+                          {% if entry.entry_type == 'lent' %}+{% else %}-{% endif %}₹{{ '%.2f'|format(entry.amount) }}
+                        </div>
+                        <div class="d-flex align-items-center entry-actions">
+                          <form method="post" action="{{ url_for('settle_borrowing', entry_id=entry.id) }}">
+                            <button
+                              type="submit"
+                              class="btn btn-sm entry-action-btn {% if entry.is_settled %}entry-action-edit{% else %}entry-action-settle{% endif %}"
+                            >
+                              {% if entry.is_settled %}Reopen{% else %}Settle{% endif %}
+                            </button>
+                          </form>
+                          <form method="post" action="{{ url_for('delete_borrowing', entry_id=entry.id) }}">
+                            <button
+                              type="submit"
+                              class="btn btn-sm entry-action-btn entry-action-delete"
+                              onclick="return confirm('Delete this borrowing entry?');"
+                            >
+                              Delete
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-secondary mb-0">No borrowing details found for this person.</p>
+            {% endif %}
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <a href="{{ url_for('borrowings') }}" class="btn btn-outline-dark rounded-pill px-4">Close</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if selected_person %}
+    <script>
+      const personBreakupModalElement = document.getElementById('personBreakupModal');
+      if (personBreakupModalElement) {
+        const personBreakupModal = new bootstrap.Modal(personBreakupModalElement);
+        personBreakupModal.show();
+        personBreakupModalElement.addEventListener('hidden.bs.modal', () => {
+          window.location = {{ url_for('borrowings')|tojson }};
+        });
+      }
+    </script>
+  {% endif %}
+{% endblock %}

@@ -14,7 +14,7 @@
   </section>
 
   <section class="row g-3 mb-4 dashboard-summary-grid">
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-xl-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body p-4 dashboard-summary-card">
           <div class="text-secondary small mb-1">Money out</div>
@@ -22,7 +22,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-xl-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body p-4 dashboard-summary-card">
           <div class="text-secondary small mb-1">Money in</div>
@@ -30,11 +30,22 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4 dashboard-summary-card">
+          <div class="text-secondary small mb-1">Net this period</div>
+          <div class="fw-bold fs-4 {% if net_period_balance >= 0 %}credit-amount{% endif %}">
+            {% if net_period_balance > 0 %}+{% endif %}₹{{ '%.2f'|format(net_period_balance) }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body p-4 dashboard-summary-card">
           <div class="text-secondary small mb-1">Current balance</div>
           <div class="fw-bold fs-4 {% if current_balance >= 0 %}credit-amount{% endif %}">₹{{ '%.2f'|format(current_balance) }}</div>
+          <div class="dashboard-summary-caption mt-2">Includes carry-forward up to {{ filters.end_date.strftime('%d %b %Y') }}</div>
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
-const CACHE_NAME = "spendsense-v1";
+const CACHE_NAME = "spendsense-v2";
 const STATIC_ASSETS = [
   "/login",
   "/manifest.webmanifest",
-  "/static/styles.css",
+  "/static/styles.css?v=20260502a",
   "/static/favicon.svg"
 ];
 

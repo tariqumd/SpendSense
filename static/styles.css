@@ -28,7 +28,24 @@ body {
 }
 
 .app-container {
-  max-width: 860px;
+  max-width: 1040px;
+}
+
+.app-header {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.app-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header-nav {
+  width: 100%;
+  padding-top: 0.1rem;
 }
 
 .brand-link {
@@ -60,33 +77,43 @@ body {
 }
 
 .app-nav {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.35rem;
-  padding: 0.3rem;
-  background: rgba(255, 255, 255, 0.7);
+  padding: 0.35rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.68));
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 22px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+  width: 100%;
+  min-width: 100%;
 }
 
 .app-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted);
   text-decoration: none;
-  font-size: 0.9rem;
+  text-align: center;
+  font-size: 0.92rem;
   font-weight: 700;
   line-height: 1;
-  padding: 0.7rem 1rem;
-  border-radius: 999px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  padding: 0.9rem 0.8rem;
+  border-radius: 16px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .app-nav-link:hover {
   color: var(--text);
   background: rgba(15, 23, 42, 0.05);
+  transform: translateY(-1px);
 }
 
 .app-nav-link-active {
   background: var(--text);
   color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .user-chip {
@@ -662,6 +689,24 @@ body {
   padding: 0.9rem 1rem;
 }
 
+.borrowing-toggle {
+  width: 100%;
+}
+
+.borrowing-summary-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.72));
+}
+
+.borrowing-summary-link {
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.borrowing-summary-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
 .category-modal {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(14px);
@@ -772,6 +817,19 @@ body {
   color: #fff !important;
 }
 
+.entry-action-settle {
+  background-color: rgba(37, 99, 235, 0.10) !important;
+  border-color: #2563eb !important;
+  color: #2563eb !important;
+}
+
+.entry-action-settle:hover,
+.entry-action-settle:focus {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #fff !important;
+}
+
 .entry-action-delete {
   background-color: rgba(220, 38, 38, 0.10) !important;
   border-color: #dc2626 !important;
@@ -792,6 +850,14 @@ body {
 }
 
 @media (max-width: 575.98px) {
+  .app-header {
+    gap: 0;
+  }
+
+  .app-header-top {
+    align-items: center;
+  }
+
   .app-shell {
     padding-left: max(0.35rem, env(safe-area-inset-left));
     padding-right: max(0.35rem, env(safe-area-inset-right));
@@ -876,6 +942,10 @@ body {
   .filter-toolbar,
   .filter-pills {
     width: 100%;
+  }
+
+  .app-container {
+    max-width: 860px;
   }
 
   .filter-pills {
