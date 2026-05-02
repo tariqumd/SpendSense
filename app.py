@@ -1100,6 +1100,10 @@ def create_app():
     def dashboard():
         raw_selected_category = (request.args.get("category", "") or "").strip()
         selected_category = normalize_rule_name(raw_selected_category) if raw_selected_category else ""
+        raw_selected_credit_category = (request.args.get("credit_category", "") or "").strip()
+        selected_credit_category = (
+            normalize_rule_name(raw_selected_credit_category) if raw_selected_credit_category else ""
+        )
         dashboard_view = (request.args.get("view") or "category").strip().lower()
         if dashboard_view not in {"category", "all", "credits"}:
             dashboard_view = "category"
@@ -1116,6 +1120,16 @@ def create_app():
             )
         else:
             category_transactions = []
+
+        if selected_credit_category:
+            credit_category_transactions = (
+                filtered_transactions.filter_by(category=selected_credit_category, transaction_type="credit")
+                .order_by(Transaction.created_at.desc(), Transaction.id.desc())
+                .limit(50)
+                .all()
+            )
+        else:
+            credit_category_transactions = []
 
         all_logs = (
             filtered_transactions.order_by(Transaction.created_at.desc(), Transaction.id.desc()).limit(50).all()
@@ -1156,7 +1170,9 @@ def create_app():
             chart_axis_max=dashboard_data["chart_axis_max"],
             chart_basis_label=dashboard_data["chart_basis_label"],
             selected_category=selected_category,
+            selected_credit_category=selected_credit_category,
             category_transactions=category_transactions,
+            credit_category_transactions=credit_category_transactions,
             credit_breakdown=credit_breakdown,
             dashboard_view=dashboard_view,
             all_logs=all_logs,
@@ -1170,6 +1186,7 @@ def create_app():
                 end_date=filters["end_date_value"],
                 view=dashboard_view,
                 category=selected_category or None,
+                credit_category=selected_credit_category or None,
             ),
         )
 
